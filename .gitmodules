@@ -1,0 +1,9 @@
+[submodule "vendor/gstack"]
+	path = vendor/gstack
+	url = https://github.com/garrytan/gstack
+[submodule "vendor/gsd"]
+	path = vendor/gsd
+	url = https://github.com/gsd-build/get-shit-done
+[submodule "vendor/ecc"]
+	path = vendor/ecc
+	url = https://github.com/affaan-m/everything-claude-code
