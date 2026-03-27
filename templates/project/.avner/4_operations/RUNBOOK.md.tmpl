@@ -1,0 +1,47 @@
+# Runbook — {{PROJECT_NAME}}
+
+## Deploy Checklist
+1. [ ] All tests pass
+2. [ ] Build succeeds
+3. [ ] verify-ops: GO
+4. [ ] verify-security: GO
+5. [ ] Env vars set in production
+6. [ ] Migrations applied (if any)
+7. [ ] CHANGELOG updated
+8. [ ] Version bumped
+
+## Deploy Commands
+```bash
+# Build
+[build command from TECHSTACK.md]
+
+# Deploy
+[deploy command]
+
+# Verify
+[smoke test command or health check URL]
+```
+
+## Rollback Procedure
+1. Identify the last known-good version: `git log --oneline -10`
+2. Revert to last good deploy: [platform-specific rollback command]
+3. Verify rollback: [health check]
+4. Notify team: [channel/email]
+
+## Smoke Tests
+| Test | Command / URL | Expected |
+|------|--------------|----------|
+| Health check | GET /api/health | `{ status: "ok" }` |
+| Auth flow | [describe] | [expected] |
+| Core feature | [describe] | [expected] |
+
+## Backup & Recovery
+- Database: [backup strategy — e.g., daily snapshots, point-in-time recovery]
+- Files: [if applicable]
+- Secrets: [rotation schedule]
+
+## Emergency Contacts
+| Role | Contact | When |
+|------|---------|------|
+| On-call | [name/handle] | Production down |
+| Security | [name/handle] | Breach/vulnerability |

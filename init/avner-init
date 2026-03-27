@@ -1,0 +1,337 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# avner-init — AVNER project onboarding CLI
+# Usage:
+#   avner-init --new <project-name> [--stack "..."] [--goal "..."]
+#   avner-init --project <path>     [--stack "..."] [--goal "..."]
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AVNER_STACK_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEMPLATE_DIR="$AVNER_STACK_DIR/templates/project"
+AGENTS_DIR="$AVNER_STACK_DIR/agents"
+
+# --- Helpers ---
+
+usage() {
+  cat <<'EOF'
+avner-init — AVNER v7 project onboarding
+
+Usage:
+  avner-init --new <project-name> [--stack "..."] [--goal "..."]
+  avner-init --project <path>     [--stack "..."] [--goal "..."]
+
+Options:
+  --new <name>      Create a new project directory with full AVNER scaffolding
+  --project <path>  Add AVNER scaffolding to an existing project (additive only)
+  --stack "..."     Tech stack description (prompted if omitted)
+  --goal "..."      One-sentence project goal (prompted if omitted)
+  --help            Show this help
+EOF
+  exit "${1:-0}"
+}
+
+prompt_if_empty() {
+  local varname="$1"
+  local prompt_text="$2"
+  local current_val="${!varname}"
+  if [ -z "$current_val" ]; then
+    printf "%s: " "$prompt_text"
+    read -r current_val
+    eval "$varname=\"\$current_val\""
+  fi
+}
+
+substitute() {
+  local src="$1"
+  local dest="$2"
+  sed -e "s|{{PROJECT_NAME}}|${PROJECT_NAME}|g" \
+      -e "s|{{STACK}}|${STACK}|g" \
+      -e "s|{{GOAL}}|${GOAL}|g" \
+      "$src" > "$dest"
+}
+
+copy_template() {
+  local rel_path="$1"      # relative path under templates/project/, e.g. ".avner/MEMORY.md.tmpl"
+  local src="$TEMPLATE_DIR/$rel_path"
+
+  # Determine output filename: strip .tmpl and apply name mappings
+  local out_name="${rel_path%.tmpl}"
+
+  # File name mappings (template name -> agent-expected name)
+  out_name="${out_name//GAPANALYSIS.md/GAP_ANALYSIS.md}"
+  out_name="${out_name//APICONTRACTS.md/API_CONTRACTS.md}"
+  out_name="${out_name//DBSCHEMA.md/DB_SCHEMA.md}"
+
+  local dest="$TARGET_DIR/$out_name"
+
+  if [ ! -f "$src" ]; then
+    echo "  WARN: template not found: $rel_path"
+    return
+  fi
+
+  # In --project mode, never overwrite existing files
+  if [ "$MODE" = "project" ] && [ -f "$dest" ]; then
+    echo "  SKIP: $out_name (already exists)"
+    SKIPPED+=("$out_name")
+    return
+  fi
+
+  mkdir -p "$(dirname "$dest")"
+  substitute "$src" "$dest"
+  echo "  OK: $out_name"
+  CREATED+=("$out_name")
+}
+
+copy_agents() {
+  local agents_dest="$TARGET_DIR/.claude/agents"
+  mkdir -p "$agents_dest"
+
+  for agent_file in "$AGENTS_DIR"/verify-*.md; do
+    local name
+    name="$(basename "$agent_file")"
+    local dest="$agents_dest/$name"
+
+    if [ "$MODE" = "project" ] && [ -f "$dest" ]; then
+      echo "  SKIP: .claude/agents/$name (already exists)"
+      SKIPPED+=(".claude/agents/$name")
+    else
+      cp "$agent_file" "$dest"
+      echo "  OK: .claude/agents/$name"
+      CREATED+=(".claude/agents/$name")
+    fi
+  done
+}
+
+create_project_gitignore() {
+  local dest="$TARGET_DIR/.gitignore"
+  if [ -f "$dest" ]; then
+    echo "  SKIP: .gitignore (already exists)"
+    return
+  fi
+  cat > "$dest" <<'GITIGNORE'
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Rust
+target/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# AVNER runtime artifacts
+.avner/4_operations/STATE.md.bak
+.avner/4_operations/last_vision_check.txt
+GITIGNORE
+  echo "  OK: .gitignore"
+  CREATED+=(".gitignore")
+}
+
+detect_stack() {
+  local dir="$1"
+  if [ -f "$dir/package.json" ]; then
+    echo "Detected: Node/TypeScript stack (package.json found)"
+    [ -z "$STACK" ] && STACK="Node.js / TypeScript"
+  elif [ -f "$dir/pyproject.toml" ] || [ -f "$dir/requirements.txt" ]; then
+    echo "Detected: Python stack"
+    [ -z "$STACK" ] && STACK="Python"
+  elif [ -f "$dir/Cargo.toml" ]; then
+    echo "Detected: Rust stack"
+    [ -z "$STACK" ] && STACK="Rust"
+  elif [ -f "$dir/go.mod" ]; then
+    echo "Detected: Go stack"
+    [ -z "$STACK" ] && STACK="Go"
+  fi
+}
+
+# --- Template list ---
+
+TEMPLATES=(
+  "CLAUDE.md.tmpl"
+  ".claude/settings.json.tmpl"
+  ".avner/MEMORY.md.tmpl"
+  ".avner/LESSONS_VISION.md.tmpl"
+  ".avner/LESSONS_ARCHITECTURE.md.tmpl"
+  ".avner/LESSONS_CONTRACTS.md.tmpl"
+  ".avner/LESSONS_OPERATIONS.md.tmpl"
+  ".avner/1_vision/VISION.md.tmpl"
+  ".avner/1_vision/REQUIREMENTS.md.tmpl"
+  ".avner/1_vision/GAPANALYSIS.md.tmpl"
+  ".avner/2_architecture/ARCHITECTURE.md.tmpl"
+  ".avner/2_architecture/TECHSTACK.md.tmpl"
+  ".avner/3_contracts/APICONTRACTS.md.tmpl"
+  ".avner/3_contracts/DBSCHEMA.md.tmpl"
+  ".avner/3_contracts/UI_SPEC.md.tmpl"
+  ".avner/4_operations/STATE.md.tmpl"
+  ".avner/4_operations/RUNBOOK.md.tmpl"
+  ".avner/4_operations/UI_REVIEW.md.tmpl"
+)
+
+# --- Parse args ---
+
+MODE=""
+PROJECT_NAME=""
+STACK=""
+GOAL=""
+TARGET_DIR=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --new)
+      MODE="new"
+      PROJECT_NAME="${2:-}"
+      [ -z "$PROJECT_NAME" ] && { echo "Error: --new requires a project name"; usage 1; }
+      shift 2
+      ;;
+    --project)
+      MODE="project"
+      TARGET_DIR="${2:-}"
+      [ -z "$TARGET_DIR" ] && { echo "Error: --project requires a path"; usage 1; }
+      shift 2
+      ;;
+    --stack)
+      STACK="${2:-}"
+      shift 2
+      ;;
+    --goal)
+      GOAL="${2:-}"
+      shift 2
+      ;;
+    --help|-h)
+      usage 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      usage 1
+      ;;
+  esac
+done
+
+[ -z "$MODE" ] && { echo "Error: specify --new or --project"; usage 1; }
+
+# --- Track created/skipped files ---
+CREATED=()
+SKIPPED=()
+
+# --- Execute ---
+
+if [ "$MODE" = "new" ]; then
+  TARGET_DIR="$PROJECT_NAME"
+
+  # Prompt for missing values
+  prompt_if_empty STACK "Tech stack (e.g., Next.js, Supabase, Vercel)"
+  prompt_if_empty GOAL  "One-sentence goal (what does production-ready mean?)"
+
+  echo ""
+  echo "Creating $PROJECT_NAME..."
+  echo ""
+
+  mkdir -p "$TARGET_DIR"
+
+  # Init git if not already
+  if [ ! -d "$TARGET_DIR/.git" ]; then
+    (cd "$TARGET_DIR" && git init -q)
+    echo "  OK: git init"
+  fi
+
+  # Copy all templates
+  for tmpl in "${TEMPLATES[@]}"; do
+    copy_template "$tmpl"
+  done
+
+  # Copy agents
+  copy_agents
+
+  # Create .gitignore
+  create_project_gitignore
+
+  echo ""
+  echo "=== Project created: $PROJECT_NAME ==="
+  echo "  Files created: ${#CREATED[@]}"
+  echo ""
+  echo "Next steps:"
+  echo "  cd $PROJECT_NAME"
+  echo "  Open this folder in Claude Code."
+  echo "  Fill in .avner/1_vision/VISION.md and .avner/MEMORY.md"
+  echo "  Start your first feature with /one-flow"
+  echo ""
+
+elif [ "$MODE" = "project" ]; then
+  # Resolve to absolute path
+  TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd)" || {
+    echo "Error: path does not exist: $TARGET_DIR"
+    exit 1
+  }
+
+  # Warn if no git
+  if [ ! -d "$TARGET_DIR/.git" ]; then
+    echo "WARN: No .git found at $TARGET_DIR. Continuing anyway."
+  fi
+
+  # Detect stack
+  detect_stack "$TARGET_DIR"
+
+  # Derive project name from directory
+  PROJECT_NAME="$(basename "$TARGET_DIR")"
+
+  # Prompt for remaining values
+  prompt_if_empty STACK "Tech stack (e.g., Next.js, Supabase, Vercel)"
+  prompt_if_empty GOAL  "One-sentence goal (what does production-ready mean?)"
+
+  echo ""
+  echo "Adding AVNER scaffolding to $TARGET_DIR..."
+  echo ""
+
+  # Copy all templates (additive only)
+  for tmpl in "${TEMPLATES[@]}"; do
+    copy_template "$tmpl"
+  done
+
+  # Copy agents (additive only)
+  copy_agents
+
+  echo ""
+  echo "=== Onboarding complete ==="
+  echo "  Files created: ${#CREATED[@]}"
+  echo "  Files skipped: ${#SKIPPED[@]} (already existed)"
+
+  if [ ${#SKIPPED[@]} -gt 0 ]; then
+    echo ""
+    echo "Existing files were not modified. Consider reviewing these for AVNER alignment:"
+    for f in "${SKIPPED[@]}"; do
+      echo "  - $f"
+    done
+  fi
+
+  echo ""
+  echo "Next steps:"
+  echo "  Fill in .avner/1_vision/VISION.md and .avner/MEMORY.md"
+  echo "  Review .avner/2_architecture/TECHSTACK.md — add your build/test/lint commands"
+  echo "  Start your first feature with /one-flow"
+  echo ""
+
+  if [ "$STACK" != "Node.js / TypeScript" ] && [ "$STACK" != "TBD" ]; then
+    echo "NOTE: .claude/settings.json defaults to npm commands."
+    echo "      Edit it to match your stack ($STACK)."
+    echo ""
+  fi
+fi

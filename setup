@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# avner-stack global installer
+# Symlinks skills into ~/.claude/skills/ so they're available in every project.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILLS_DIR="$HOME/.claude/skills"
+
+SKILLS=(avner one-flow ui ui-review)
+
+echo "avner-stack setup"
+echo "================="
+echo ""
+echo "Source: $SCRIPT_DIR"
+echo "Target: $SKILLS_DIR"
+echo ""
+
+# Ensure target directory exists
+mkdir -p "$SKILLS_DIR"
+
+# Link each skill
+for skill in "${SKILLS[@]}"; do
+  src="$SCRIPT_DIR/skills/$skill"
+  dest="$SKILLS_DIR/$skill"
+
+  if [ ! -d "$src" ]; then
+    echo "  WARN: $src not found, skipping"
+    continue
+  fi
+
+  # Remove existing symlink or directory
+  if [ -L "$dest" ]; then
+    rm "$dest"
+  elif [ -d "$dest" ]; then
+    echo "  WARN: $dest exists and is not a symlink. Skipping to avoid data loss."
+    echo "        Remove it manually if you want avner-stack to manage it."
+    continue
+  fi
+
+  # Try symlink first, fall back to copy (Windows without dev mode)
+  if ln -s "$src" "$dest" 2>/dev/null; then
+    echo "  OK: $skill -> symlinked"
+  else
+    cp -r "$src" "$dest"
+    echo "  OK: $skill -> copied (symlink not available)"
+  fi
+done
+
+echo ""
+echo "Done! Skills installed:"
+echo "  /avner      — governance overview + session management"
+echo "  /one-flow   — end-to-end feature delivery"
+echo "  /ui         — UI design contract creation"
+echo "  /ui-review  — 6-pillar UI audit"
+echo ""
+echo "Next steps:"
+echo "  New project:      $SCRIPT_DIR/init/avner-init --new <project-name>"
+echo "  Existing project: $SCRIPT_DIR/init/avner-init --project <path>"
+echo ""
+echo "Then open the project in Claude Code and run /one-flow."

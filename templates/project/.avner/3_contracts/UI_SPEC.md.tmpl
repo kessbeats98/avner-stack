@@ -1,0 +1,81 @@
+# UI Spec — {{PROJECT_NAME}}
+
+This is the UI design contract. Update before UI-heavy work.
+Run `/ui` to create or update sections. Run `/ui-review` to audit implementation.
+
+---
+
+## Design System
+- Component library: [e.g., shadcn/ui, Radix, custom]
+- Icon set: [e.g., Lucide, Heroicons]
+- Font: [e.g., Inter, system-ui]
+
+## Spacing Scale (8-point grid)
+| Token | Value | Usage |
+|-------|-------|-------|
+| xs | 4px | Tight inline spacing |
+| sm | 8px | Related element gaps |
+| md | 16px | Section padding |
+| lg | 24px | Card padding |
+| xl | 32px | Section margins |
+| 2xl | 48px | Page sections |
+| 3xl | 64px | Hero spacing |
+
+All spacing values must be multiples of 4.
+
+## Typography
+| Role | Size | Weight | Line Height | Usage |
+|------|------|--------|-------------|-------|
+| Body | 14-16px | 400 | 1.5 | Paragraphs, descriptions |
+| Label | 12-14px | 500 | 1.4 | Form labels, captions |
+| Heading | 20-24px | 600 | 1.2 | Section headers |
+| Display | 32-48px | 700 | 1.1 | Page titles, hero |
+
+Max 4 font sizes. Max 2 font weights.
+
+## Color System (60/30/10)
+| Role | Proportion | Usage | Value |
+|------|-----------|-------|-------|
+| Dominant | 60% | Backgrounds, surfaces | |
+| Secondary | 30% | Text, borders, cards | |
+| Accent | 10% | CTAs, active states, links | |
+| Destructive | — | Delete, error, danger | |
+
+Accent is reserved for: [list specific uses — e.g., primary CTA, active nav, focus ring].
+
+## Copywriting Contract
+| Pattern | Template | Example |
+|---------|----------|---------|
+| CTA (primary) | [verb] + [object] | "Create project" |
+| CTA (secondary) | [verb] | "Cancel" |
+| Empty state | [what's missing] + [how to fix] | "No projects yet. Create your first one." |
+| Error state | [what went wrong] + [what to do] | "Could not save. Check your connection and try again." |
+| Destructive confirm | [consequence] + [action] | "This will permanently delete all data. Delete project?" |
+
+---
+
+## Screens
+
+### [Screen Name]
+- **Description**: [what this screen does]
+- **Related R-ids**: R1, R2
+- **Layout**: [zones, hierarchy, key components]
+- **States**:
+  - Default: [description]
+  - Loading: [skeleton / spinner / progressive]
+  - Error: [inline / toast / full-page]
+  - Empty: [illustration + CTA / minimal text]
+  - Disabled: [which elements, when]
+- **Components**: [list with variants]
+- **Accessibility**: [keyboard nav, screen reader, contrast]
+- **Responsive**: [breakpoints, layout shifts]
+
+---
+
+## Checker Sign-Off
+- [ ] Copywriting: no generic labels, all states have copy
+- [ ] Visuals: focal point declared, hierarchy clear
+- [ ] Color: 60/30/10 explicit, accent usage specific
+- [ ] Typography: max 4 sizes, max 2 weights
+- [ ] Spacing: all values multiples of 4
+- [ ] Experience Design: all 5 states covered per screen

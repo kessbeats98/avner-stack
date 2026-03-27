@@ -1,0 +1,33 @@
+# API Contracts — {{PROJECT_NAME}}
+
+## Endpoints
+| Method | Path | Description | Auth | Request Body | Response |
+|--------|------|-------------|------|-------------|----------|
+| GET | /api/health | Health check | none | — | `{ status: "ok" }` |
+
+## Error Shape (standard)
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable message",
+    "details": {}
+  }
+}
+```
+
+## Status Codes
+| Code | Meaning | When |
+|------|---------|------|
+| 200 | OK | Successful read/update |
+| 201 | Created | Successful creation |
+| 400 | Bad Request | Validation failure |
+| 401 | Unauthorized | Missing/invalid auth |
+| 403 | Forbidden | Insufficient permissions |
+| 404 | Not Found | Resource doesn't exist |
+| 500 | Internal Error | Unexpected server error |
+
+## Versioning Policy
+- API changes must be additive (new fields, new endpoints).
+- Removals or type changes require /core escalation and a migration plan.
+- Breaking changes must update this document BEFORE implementation.

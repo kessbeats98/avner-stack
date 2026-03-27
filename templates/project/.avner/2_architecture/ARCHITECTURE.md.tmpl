@@ -1,0 +1,36 @@
+# Architecture — {{PROJECT_NAME}}
+
+## System Overview
+{{STACK}}
+
+[High-level description of the system and its purpose]
+
+## Component Diagram
+```
+[ASCII diagram showing major components and their relationships]
+
+  ┌──────────┐     ┌──────────┐     ┌──────────┐
+  │ Frontend  │────▶│   API    │────▶│    DB    │
+  └──────────┘     └──────────┘     └──────────┘
+```
+
+## Module Responsibilities
+| Module | Responsibility | Owns |
+|--------|---------------|------|
+| [module] | [what it does] | [files/dirs] |
+
+## Data Flow
+1. [User action] → [component] → [component] → [result]
+
+## Key Design Decisions
+- [YYYY-MM-DD] [Decision]: [rationale]
+
+## Boundary Contracts
+- Frontend ↔ API: see .avner/3_contracts/API_CONTRACTS.md
+- API ↔ DB: see .avner/3_contracts/DB_SCHEMA.md
+- External services: [list integrations and their contracts]
+
+## Constraints
+- [Performance requirements]
+- [Security requirements]
+- [Infrastructure limitations]

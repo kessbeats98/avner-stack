@@ -1,0 +1,35 @@
+# DB Schema — {{PROJECT_NAME}}
+
+## Tables
+| Table | Description | Key Columns |
+|-------|-------------|-------------|
+| [table_name] | [purpose] | id, created_at, updated_at |
+
+## Schema Details
+
+### [table_name]
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | uuid | no | gen_random_uuid() | PK |
+| created_at | timestamptz | no | now() | |
+| updated_at | timestamptz | no | now() | |
+
+## Indexes
+| Table | Index | Columns | Type |
+|-------|-------|---------|------|
+| | | | |
+
+## Relationships
+| From | To | Type | FK |
+|------|----|------|----|
+| | | | |
+
+## Migration Log
+| Date | Migration | Description | Status |
+|------|-----------|-------------|--------|
+| | | | pending / applied / rolled back |
+
+## Rules
+- All schema changes require /core escalation.
+- Destructive migrations (column drop, table drop) require explicit user approval.
+- This document must be updated BEFORE running migrations.
