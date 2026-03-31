@@ -19,8 +19,11 @@
       "git add *",
       "git commit *",
       "git log *",
+      "git checkout -b *",
+      "git branch *",
       "tsc --noEmit",
-      "eslint *"
+      "eslint *",
+      "curl -s * localhost:3100/*"
     ],
     "deny": [
       ".env",
@@ -30,7 +33,9 @@
       "curl * | bash",
       "git push *",
       "git reset --hard *",
-      "git checkout -- *"
+      "git checkout -- *",
+      "git merge * main",
+      "git merge main *"
     ]
   },
   "compaction": {
@@ -47,6 +52,10 @@
           },
           {
             "type": "command",
+            "command": "cat .avner/4_operations/DISPATCH.md 2>/dev/null || echo 'No active dispatch.'"
+          },
+          {
+            "type": "command",
             "command": "test -f .avner/4_operations/STATE.md && find .avner/4_operations/STATE.md -mtime +7 -exec echo '⚠️ STATE.md is over 7 days old. Consider updating.' \\; 2>/dev/null || true"
           }
         ]
@@ -56,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '=== POST-COMPACTION CONTEXT RESTORE ===' && head -n 150 .avner/MEMORY.md 2>/dev/null && echo '=== Read API_CONTRACTS.md and DB_SCHEMA.md before any /core or /deploy work. ==='"
+            "command": "echo '=== POST-COMPACTION CONTEXT RESTORE ===' && head -n 150 .avner/MEMORY.md 2>/dev/null && echo '---' && cat .avner/4_operations/DISPATCH.md 2>/dev/null && echo '=== Read API_CONTRACTS.md and DB_SCHEMA.md before any /core or /deploy work. ==='"
           }
         ]
       }
@@ -93,7 +102,20 @@
           },
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'git commit'; then if ! grep -E -q '^(APPROVE|FIX-BYPASS)' .avner/4_operations/last_vision_check.txt 2>/dev/null; then echo 'COMMIT BLOCKED: No valid vision/fix evidence in last_vision_check.txt'; exit 2; fi; fi"
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'git commit'; then if ! grep -E -q '^(APPROVE|FIX-BYPASS)' .avner/4_operations/last_vision_check.txt 2>/dev/null; then DISPATCH_EVIDENCE=$(grep -oE '(APPROVE|FIX-BYPASS) [0-9]+' .avner/4_operations/DISPATCH.md 2>/dev/null | head -1); if [ -z \"$DISPATCH_EVIDENCE\" ]; then echo 'COMMIT BLOCKED: No vision evidence in last_vision_check.txt or DISPATCH.md'; exit 2; fi; fi; fi"
+          },
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'git merge'; then if ! grep -E -q '^GATE_PASS' .avner/4_operations/gate_pass.txt 2>/dev/null; then echo 'MERGE BLOCKED: No gate_pass.txt — Council gate has not been passed. Only AVNER Manager can issue a gate pass after Council approval.'; exit 2; fi; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '(STATE\\.md|DISPATCH\\.md|COUNCIL_LOG\\.md|gate_pass\\.txt)'; then AGENT_NAME=$(echo \"$CLAUDE_AGENT_NAME\" 2>/dev/null); if [ \"$AGENT_NAME\" = 'claude-executor' ]; then echo 'WRITE BLOCKED: Executor cannot write to Manager-owned files (STATE.md, DISPATCH.md, COUNCIL_LOG.md, gate_pass.txt)'; exit 2; fi; fi"
           }
         ]
       }
@@ -105,6 +127,15 @@
           {
             "type": "command",
             "command": "npm run lint 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"${PAPERCLIP_API_URL:-}\" ] && [ -n \"${PAPERCLIP_AGENT_ID:-}\" ] && [ -n \"${PAPERCLIP_API_KEY:-}\" ]; then curl -s -X POST \"${PAPERCLIP_API_URL}/api/agents/${PAPERCLIP_AGENT_ID}/heartbeat/invoke\" -H \"Authorization: Bearer ${PAPERCLIP_API_KEY}\" -H \"Content-Type: application/json\" 2>/dev/null || true; fi"
           }
         ]
       }

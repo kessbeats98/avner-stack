@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$HOME/.claude/skills"
 
-SKILLS=(avner one-flow ui ui-review)
+SKILLS=(avner one-flow ui ui-review manager-dispatch executor-run)
 
 echo "avner-stack setup"
 echo "================="
@@ -49,13 +49,17 @@ done
 
 echo ""
 echo "Done! Skills installed:"
-echo "  /avner      — governance overview + session management"
-echo "  /one-flow   — end-to-end feature delivery"
-echo "  /ui         — UI design contract creation"
-echo "  /ui-review  — 6-pillar UI audit"
+echo "  /avner            — governance overview + session management (solo mode)"
+echo "  /one-flow         — end-to-end feature delivery (solo mode)"
+echo "  /ui               — UI design contract creation"
+echo "  /ui-review        — 6-pillar UI audit"
+echo "  /dispatch         — task decomposition + assignment (multi-agent)"
+echo "  /execute          — task implementation protocol (multi-agent)"
 echo ""
 echo "Next steps:"
 echo "  New project:      $SCRIPT_DIR/init/avner-init --new <project-name>"
 echo "  Existing project: $SCRIPT_DIR/init/avner-init --project <path>"
 echo ""
-echo "Then open the project in Claude Code and run /one-flow."
+echo "Then open the project in Claude Code."
+echo "  Solo mode:  run /one-flow"
+echo "  Multi-agent: run /dispatch"

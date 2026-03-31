@@ -1,0 +1,28 @@
+# Paperclip Configuration — {{PROJECT_NAME}}
+# Docs: https://docs.paperclip.ing/api/overview
+
+# Paperclip server URL (local default)
+api_url: http://localhost:3100/api
+
+# Company and agent IDs (set after `paperclipai onboard`)
+company_id: ""
+manager_agent_id: ""
+executor_agent_id: ""
+reviewer_agent_id: ""
+
+# Budget
+monthly_budget_usd: 100
+per_task_cap:
+  LOW: 2.00
+  MEDIUM: 8.00
+  HIGH: 25.00
+
+# Heartbeat
+heartbeat_on_post_tool_use: true
+
+# Approval triggers
+require_human_approval:
+  - HIGH risk task completion
+  - Council NO-GO verdict
+  - Deploy readiness
+  - Budget 80% threshold

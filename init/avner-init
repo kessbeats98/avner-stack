@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# avner-init — AVNER project onboarding CLI
+# avner-init — AVNER v9 project onboarding CLI
 # Usage:
 #   avner-init --new <project-name> [--stack "..."] [--goal "..."]
 #   avner-init --project <path>     [--stack "..."] [--goal "..."]
@@ -15,7 +15,7 @@ AGENTS_DIR="$AVNER_STACK_DIR/agents"
 
 usage() {
   cat <<'EOF'
-avner-init — AVNER v7 project onboarding
+avner-init — AVNER v9 project onboarding
 
 Usage:
   avner-init --new <project-name> [--stack "..."] [--goal "..."]
@@ -87,6 +87,7 @@ copy_agents() {
   local agents_dest="$TARGET_DIR/.claude/agents"
   mkdir -p "$agents_dest"
 
+  # Copy Council agents (verify-*)
   for agent_file in "$AGENTS_DIR"/verify-*.md; do
     local name
     name="$(basename "$agent_file")"
@@ -99,6 +100,26 @@ copy_agents() {
       cp "$agent_file" "$dest"
       echo "  OK: .claude/agents/$name"
       CREATED+=(".claude/agents/$name")
+    fi
+  done
+
+  # Copy v9 agents (manager, executor, reviewer)
+  for agent_name in avner-manager claude-executor codex-reviewer; do
+    local src="$AGENTS_DIR/${agent_name}.md"
+    local dest="$agents_dest/${agent_name}.md"
+
+    if [ ! -f "$src" ]; then
+      echo "  WARN: agent not found: ${agent_name}.md"
+      continue
+    fi
+
+    if [ "$MODE" = "project" ] && [ -f "$dest" ]; then
+      echo "  SKIP: .claude/agents/${agent_name}.md (already exists)"
+      SKIPPED+=(".claude/agents/${agent_name}.md")
+    else
+      cp "$src" "$dest"
+      echo "  OK: .claude/agents/${agent_name}.md"
+      CREATED+=(".claude/agents/${agent_name}.md")
     fi
   done
 }
@@ -141,6 +162,7 @@ target/
 # AVNER runtime artifacts
 .avner/4_operations/STATE.md.bak
 .avner/4_operations/last_vision_check.txt
+.avner/4_operations/gate_pass.txt
 GITIGNORE
   echo "  OK: .gitignore"
   CREATED+=(".gitignore")
@@ -173,6 +195,7 @@ TEMPLATES=(
   ".avner/LESSONS_ARCHITECTURE.md.tmpl"
   ".avner/LESSONS_CONTRACTS.md.tmpl"
   ".avner/LESSONS_OPERATIONS.md.tmpl"
+  ".avner/LESSONS_AUTO.md.tmpl"
   ".avner/1_vision/VISION.md.tmpl"
   ".avner/1_vision/REQUIREMENTS.md.tmpl"
   ".avner/1_vision/GAPANALYSIS.md.tmpl"
@@ -184,6 +207,11 @@ TEMPLATES=(
   ".avner/4_operations/STATE.md.tmpl"
   ".avner/4_operations/RUNBOOK.md.tmpl"
   ".avner/4_operations/UI_REVIEW.md.tmpl"
+  ".avner/4_operations/DISPATCH.md.tmpl"
+  ".avner/4_operations/EVIDENCE.md.tmpl"
+  ".avner/4_operations/REVIEW.md.tmpl"
+  ".avner/4_operations/COUNCIL_LOG.md.tmpl"
+  ".paperclip/config.yaml.tmpl"
 )
 
 # --- Parse args ---
@@ -272,7 +300,7 @@ if [ "$MODE" = "new" ]; then
   echo "  cd $PROJECT_NAME"
   echo "  Open this folder in Claude Code."
   echo "  Fill in .avner/1_vision/VISION.md and .avner/MEMORY.md"
-  echo "  Start your first feature with /one-flow"
+  echo "  Start your first feature with /one-flow (solo) or /dispatch (multi-agent)"
   echo ""
 
 elif [ "$MODE" = "project" ]; then
@@ -326,7 +354,7 @@ elif [ "$MODE" = "project" ]; then
   echo "Next steps:"
   echo "  Fill in .avner/1_vision/VISION.md and .avner/MEMORY.md"
   echo "  Review .avner/2_architecture/TECHSTACK.md — add your build/test/lint commands"
-  echo "  Start your first feature with /one-flow"
+  echo "  Start your first feature with /one-flow (solo) or /dispatch (multi-agent)"
   echo ""
 
   if [ "$STACK" != "Node.js / TypeScript" ] && [ "$STACK" != "TBD" ]; then
