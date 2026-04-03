@@ -8,7 +8,7 @@ avner-stack layers four complementary systems into one Claude Code workflow pack
 ┌─────────────────────────────────────────────┐
 │  /one-flow  (unified skill)                 │  ← User entry point
 ├─────────────────────────────────────────────┤
-│  AVNER v7 Governance                        │  ← Gates, Council, DNA Safety
+│  AVNER v10 Governance                       │  ← Gates, Council, DNA Safety
 │  Gates: G0 Delete First → G1 Finish First   │
 │  Council: Elazar, Eliezer, Yehoshua,        │
 │           Yossi, Shimon                      │
@@ -33,9 +33,9 @@ avner-stack layers four complementary systems into one Claude Code workflow pack
 └─────────────────────────────────────────────┘
 ```
 
-## AVNER v7 — Governance
+## AVNER Governance (v10)
 
-The core governance framework. Defines:
+The core governance framework. See `docs/AGENTS.md` for the full agent index and `docs/gate-protocols.md` for Council gate details. Defines:
 
 - **Four Worlds (A.B.I.A.)**: Vision (WHY), Architecture (WHAT), Contracts (HOW), Operations (DO). Each has a directory under `.avner/` with specific documents.
 - **Council Protocol**: 5 verification agents that gate different modes. Most tasks trigger 0-1 agents. All 5 firing means something significant is happening.
@@ -103,3 +103,10 @@ project/
         ├── RUNBOOK.md               ← Deploy checklist, rollback
         └── UI_REVIEW.md             ← 6-pillar audit log
 ```
+
+## History
+
+Earlier versions (v7, v8, v9) used a Manager → Executor → Codex Reviewer multi-agent loop.
+v10 consolidated to 3 roles (CEO CODEX, Claude Code, Codex Review) with /one-flow as the single execution path.
+
+Legacy specs and archived agents: `archive/`
