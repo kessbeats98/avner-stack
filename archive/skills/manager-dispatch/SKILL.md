@@ -11,9 +11,19 @@ Used by AVNER Manager to decompose a goal into a dispatchable task and write DIS
 
 ---
 
-## Step 0: Gate Check (G0-G7)
+## Step 0: Artifact Cleanup + Gate Check (G0-G7)
 
-Before dispatching, enforce the Council Protocol gates in order (first match wins):
+Before dispatching, clean up stale artifacts from prior tasks:
+
+1. If DISPATCH.md has an active assignment but STATE.md shows that task as DONE/FAILED/not IN_PROGRESS → clear DISPATCH.md to `## No active assignment`
+2. Delete stale files if they exist:
+   ```bash
+   rm -f .avner/4_operations/gate_pass.txt
+   rm -f .avner/4_operations/last_vision_check.txt
+   rm -f .avner/4_operations/.touched_files
+   ```
+
+Then enforce the Council Protocol gates in order (first match wins):
 
 0. **G0 (Elon Gate)**: Can this be solved by removing something? → redirect to /prune
 1. **G1 (Finish Before Start)**: STATE.md has IN_PROGRESS task? → refuse. Say: "Complete [TASK-XX] first."

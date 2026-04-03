@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$HOME/.claude/skills"
 
-SKILLS=(avner one-flow ui ui-review manager-dispatch executor-run)
+SKILLS=(avner one-flow ui ui-review ceo-codex)
 
 echo "avner-stack setup"
 echo "================="
@@ -19,7 +19,19 @@ echo ""
 # Ensure target directory exists
 mkdir -p "$SKILLS_DIR"
 
-# Link each skill
+# Clean up deprecated skill symlinks
+DEPRECATED=(manager-dispatch executor-run review-gate solo skill-creator)
+for skill in "${DEPRECATED[@]}"; do
+  dest="$SKILLS_DIR/$skill"
+  if [ -L "$dest" ]; then
+    rm "$dest"
+    echo "  REMOVED: $skill (deprecated)"
+  elif [ -d "$dest" ]; then
+    echo "  WARN: $dest exists as directory. Remove manually if no longer needed."
+  fi
+done
+
+# Link each active skill
 for skill in "${SKILLS[@]}"; do
   src="$SCRIPT_DIR/skills/$skill"
   dest="$SKILLS_DIR/$skill"
@@ -49,17 +61,18 @@ done
 
 echo ""
 echo "Done! Skills installed:"
-echo "  /avner            — governance overview + session management (solo mode)"
-echo "  /one-flow         — end-to-end feature delivery (solo mode)"
+echo "  /avner            — governance overview + session management"
+echo "  /one-flow         — end-to-end feature delivery (3-role protocol)"
 echo "  /ui               — UI design contract creation"
 echo "  /ui-review        — 6-pillar UI audit"
-echo "  /dispatch         — task decomposition + assignment (multi-agent)"
-echo "  /execute          — task implementation protocol (multi-agent)"
+echo "  /ceo-codex        — Elon-style first-principles decision framework"
+echo ""
+echo "Deprecated skills removed: /dispatch, /execute, /review-gate, /solo"
+echo "  These are now folded into /one-flow."
 echo ""
 echo "Next steps:"
 echo "  New project:      $SCRIPT_DIR/init/avner-init --new <project-name>"
 echo "  Existing project: $SCRIPT_DIR/init/avner-init --project <path>"
 echo ""
-echo "Then open the project in Claude Code."
-echo "  Solo mode:  run /one-flow"
-echo "  Multi-agent: run /dispatch"
+echo "Then open the project in Claude Code and run /one-flow."
+echo ""

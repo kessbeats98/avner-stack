@@ -85,15 +85,19 @@ Wait for Executor to return with structured evidence output.
 
 ### Step 4: Review via Codex
 
-If task risk is MEDIUM or HIGH, invoke Codex reviewer:
+If task risk is MEDIUM or HIGH, invoke Codex reviewer via Agent tool:
 
-```bash
-(cat .avner/4_operations/DISPATCH.md; echo "---"; git diff main...HEAD) | \
-  codex exec "Review this diff against the dispatch spec. Risk: [TIER]. Output: Verdict (GO/NO-GO/NEEDS-REVISION), findings by severity, evidence with file paths." \
-    --sandbox read-only -a never -o .avner/4_operations/REVIEW.md
+```
+Agent(
+  name: "codex-reviewer",
+  prompt: "[DISPATCH.md contents]\n---\n[git diff main...HEAD output]"
+)
 ```
 
-Parse REVIEW.md for verdict. If NEEDS-REVISION → re-dispatch to Executor with feedback.
+If `model: codex` unavailable, retry with `model: sonnet` override and note fallback in COUNCIL_LOG.md.
+
+After agent returns, read `.avner/4_operations/REVIEW.md` for verdict (see `docs/verdict-protocol.md`).
+If NEEDS-REVISION → re-dispatch to Executor with feedback (max 1 retry).
 
 ### Step 5: Council Gate
 

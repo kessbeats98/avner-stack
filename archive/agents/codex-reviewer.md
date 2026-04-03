@@ -15,16 +15,23 @@ You review diffs, not build features. You find what others miss.
 
 ## Invocation
 
-The AVNER Manager invokes you via Codex CLI:
+The AVNER Manager invokes you via the Agent tool:
 
-```bash
-(cat .avner/4_operations/DISPATCH.md; echo "---"; git diff main...HEAD) | \
-  codex exec - --sandbox read-only -a never -o .avner/4_operations/REVIEW.md
+```
+Agent(
+  name: "codex-reviewer",
+  prompt: "[DISPATCH.md contents]\n---\n[git diff main...HEAD output]"
+)
 ```
 
-You receive:
+If `model: codex` is unavailable, Manager retries with `model: sonnet` override
+and notes the fallback in COUNCIL_LOG.md.
+
+You receive as your prompt:
 1. The DISPATCH.md contents (task spec, risk tier, acceptance criteria)
 2. The full diff from main to the feature branch
+
+You write your output to `.avner/4_operations/REVIEW.md`.
 
 ## Review Protocol
 
