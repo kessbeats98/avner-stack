@@ -1,29 +1,30 @@
 ---
 name: avner
-description: AVNER v7 governance overview, mode selection, and session management.
+description: AVNER v10 governance overview, mode selection, and session management.
 invocation: manual
 model: sonnet
 ---
 
 # /avner — Governance & Session Manager
 
-You are the AVNER protocol orchestrator. When invoked, help the user navigate the AVNER v7 governance system.
+You are the AVNER protocol orchestrator. When invoked, help the user navigate the AVNER v10 governance system.
 
 ## On Invocation
 
 ### 1. Load Session Context
-- Read `.avner/4_operations/STATE.md` — check for IN PROGRESS tasks, session continuity.
-- Read `.avner/MEMORY.md` — load identity, non-goals, key decisions.
-- If STATE.md is missing or empty, tell the user to run onboarding first.
+- Read `.avner/primer.md` — load identity, last tasks, next steps, blockers.
+- Read `.avner/backlog.md` — load task list with priorities.
+- Read `.avner/hindsight.md` — load patterns to follow/avoid from past tasks.
+- If primer.md is missing or empty, tell the user to run onboarding first.
 
 ### 2. Show Status
 Print a concise session status:
 ```
-Project:  [from MEMORY.md]
-Phase:    [from STATE.md]
+Project:  [from primer.md]
+Phase:    [from primer.md]
 Focus:    [current sprint goal]
 Active:   [IN PROGRESS task, if any]
-Backlog:  [count of PLANNED tasks]
+Backlog:  [count from backlog.md]
 ```
 
 ### 3. Mode Selection Helper
@@ -44,10 +45,15 @@ If the user hasn't specified a mode, present this decision tree:
 - Create UI design contract → `/ui`
 - Audit existing UI → `/ui-review`
 
+### 3b. CEO CODEX Routing
+If mode involves requirements or plan review (/one-flow, /new, /core):
+→ Load /ceo-codex skill for product-owner steps.
+For backlog changes, "what should we build?", or /avner:next → load /ceo-codex so triage uses the 5 principles.
+
 ### 4. Gate Enforcement
 Before any mode runs, enforce the Council Protocol:
 0. **G0 (Elon Gate)**: Can this be solved by removal? → redirect to /prune.
-1. **G1 (Finish Before Start)**: STATE.md has IN PROGRESS? → refuse new TASK/FEAT. Exceptions: P0 bugs, /deploy, /sec.
+1. **G1 (Finish Before Start)**: primer.md has active task? → refuse new TASK/FEAT. Exceptions: P0 bugs, /deploy, /sec.
 2. **Ambiguity Guard**: Vague intent? → ask one clarifying question.
 3. **Safety Interrupt**: Unknown impact? → HALT.
 4. **Security Override**: Sensitive areas touched? → escalate to /sec.
@@ -61,7 +67,9 @@ Before any mode runs, enforce the Council Protocol:
 
 When the user asks "what's next?" or runs `/avner:next`:
 
-1. Read STATE.md.
+> Load /ceo-codex skill — triage uses the 5 principles.
+
+1. Read `.avner/backlog.md` + `.avner/hindsight.md` (patterns inform priority).
 2. Score each task:
    - Status weight: IN PROGRESS (100), REVIEW (80), PLANNED (50), PAUSED (30)
    - Priority weight: P0 (40), P1 (30), P2 (20), P3 (10)
@@ -87,7 +95,7 @@ When the user asks "what's next?" or runs `/avner:next`:
 | Vision | .avner/1_vision/ | WHY we build | VISION.md, REQUIREMENTS.md, GAP_ANALYSIS.md |
 | Architecture | .avner/2_architecture/ | WHAT we build | ARCHITECTURE.md, TECHSTACK.md |
 | Contracts | .avner/3_contracts/ | HOW we build | API_CONTRACTS.md, DB_SCHEMA.md, UI_SPEC.md |
-| Operations | .avner/4_operations/ | DO it safely | STATE.md, RUNBOOK.md, UI_REVIEW.md |
+| Operations | .avner/4_operations/ | DO it safely | DISPATCH.md, RUNBOOK.md, UI_REVIEW.md |
 
 ## Council Roles
 
@@ -100,4 +108,4 @@ When the user asks "what's next?" or runs `/avner:next`:
 | Shimon (verify-security) | Veto authority | /deploy + sensitive | NO-GO |
 
 ## DNA Safety Rule
-Never modify CLAUDE.md, MEMORY.md, STATE.md, or LESSONS_*.md without explicit user approval + visible diffs.
+Never modify CLAUDE.md, primer.md, hindsight.md, or backlog.md without explicit user approval + visible diffs.

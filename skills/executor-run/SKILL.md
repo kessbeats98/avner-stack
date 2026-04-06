@@ -13,15 +13,41 @@ Used by Claude Executor inside a worktree. Reads DISPATCH.md and implements the 
 
 ## Step 0: Load Context
 
-1. Parse DISPATCH.md from the prompt (Manager passes it as Agent prompt)
-2. Extract: task ID, spec, subtasks, acceptance criteria, mode, risk tier, vision evidence
-3. Read relevant .avner/ docs:
+1. Parse DISPATCH.md from the prompt (Manager passes it as Agent prompt).
+   Extract fields by line prefix/header:
+
+   | Field | Pattern | Required |
+   |-------|---------|----------|
+   | Task ID | `^Task:\s*(\S+)\s*—` | YES |
+   | Risk | `^Risk:\s*(HIGH\|MEDIUM\|LOW)` | YES |
+   | Mode | `^Mode:\s*(/\w+)` | YES |
+   | Branch | `^Branch:\s*(.+)` | YES |
+   | Budget-cap | `^Budget-cap:\s*(.+)` | NO |
+   | Vision-evidence | `^Vision-evidence:\s*(.+)` | YES |
+   | Subtasks | Numbered list under `### Subtasks` | YES |
+   | Acceptance criteria | Checkbox list under `### Acceptance Criteria` | YES |
+   | Spec | Text block under `### Spec` | YES |
+   | Required Council | List under `### Required Council` | NO |
+
+   **If any required field is missing:** return immediately:
+   ```
+   Status: FAILED
+   Task: UNKNOWN
+   Commits: none
+   Files changed: 0
+   Tests: SKIPPED
+   Evidence: not written
+   Summary: DISPATCH.md missing required field: [field name]
+   ```
+
+2. Read relevant .avner/ docs:
    - `.avner/2_architecture/TECHSTACK.md` — build/test commands, stack info
    - `.avner/2_architecture/ARCHITECTURE.md` — system design, boundaries
    - `.avner/3_contracts/API_CONTRACTS.md` — if touching API endpoints
    - `.avner/3_contracts/DB_SCHEMA.md` — if touching database
    - `.avner/3_contracts/UI_SPEC.md` — if touching UI (and mode is /ui or /ui-review)
-4. Verify vision evidence token is present in dispatch (APPROVE or FIX-BYPASS)
+
+3. Verify vision evidence token is present (APPROVE or FIX-BYPASS). If missing and not caught by field check above, treat as missing required field.
 
 ---
 

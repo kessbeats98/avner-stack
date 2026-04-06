@@ -1,129 +1,153 @@
-# AVNER v7.0 — One-Dev Software House
-
-## Quick Start (5 minutes)
-1. Fill in Identity below (if not already set by avner-init).
-2. Write .avner/MEMORY.md — identity, non-goals, sensitive areas.
-3. Write .avner/1_vision/VISION.md — target user, core problem, metrics.
-4. Pick your first task. Use /fix for bugs or /new for features.
-5. Or run /one-flow for full plan-to-ship workflow.
+# AVNER v10 — 3-Role Autonomous Dev
 
 ## Identity
 - Project:  {{PROJECT_NAME}}
 - Stack:    {{STACK}}
 - Goal:     {{GOAL}}
 
-## Worlds (A.B.I.A)
-- Vision:    .avner/1_vision/        (WHY)
-- Arch:      .avner/2_architecture/  (WHAT)
-- Contracts: .avner/3_contracts/     (HOW)
-- Ops:       .avner/4_operations/    (DO)
+## Roles
 
-## The Council
-- Elazar   (Vision Gate):        .claude/agents/verify-vision.md       100% of /new and /core
-- Eliezer  (Spec Guardian):      .claude/agents/verify-spec.md         ~15% of tasks
-- Yehoshua (Integration Check):  .claude/agents/verify-integration.md  invoked by Yossi
-- Yossi    (SRE / Deploy):       .claude/agents/verify-ops.md          /deploy only
-- Shimon   (CISO / Veto):        .claude/agents/verify-security.md     /deploy + sensitive
+### CEO CODEX (product owner)
+- Model: codex | maxTurns: 20
+- Owns: requirements, GO/NO-GO verdicts, primer.md, hindsight.md
+- Reads: CLAUDE.md, primer.md, obsidian/, all .avner/, source (context only)
+- CANNOT: write code, write plans, execute commands, touch git
 
-Most tasks trigger 0-1 Council members. All 5 firing = something big is happening.
+### CLAUDE CODE (architect + builder)
+- Model: sonnet 4.6 | maxTurns: 50
+- Owns: plans, architecture decisions, all implementation
+- Reads: CLAUDE.md, primer.md, hindsight.md, obsidian/, git context, all source
+- CANNOT: merge to main, write primer.md, override CODEX REVIEW, skip lint/typecheck
 
-## Modes (DSL)
-/prune    → Remove dead code, features, or requirements (DELETE FIRST)
-/new      → New feature or file
-/fix      → Bugfix or logic correction
-/pol      → Polish only (zero logic changes)
-/sec      → Security review or hardening
-/deploy   → Ship to production
-/core     → Deep schema / API / architecture work
-/research → Pre-build investigation (unfamiliar tech, uncertain approach)
-/review   → Reflect, sweep, health check, handoff
-/save     → Save work-in-progress and push
-/one-flow → End-to-end feature delivery (plan → review → build → QA → ship)
-/ui       → Create or update UI design contract (UI_SPEC.md)
-/ui-review → Retroactive 6-pillar UI audit (UI_REVIEW.md)
+### CODEX REVIEW (adversarial reviewer)
+- Model: codex | maxTurns: 3
+- Owns: quality verdicts, diff analysis
+- Reads: everything CLAUDE CODE reads + diff + EVIDENCE.md
+- CANNOT: write code (except ONE surgical fix on 3rd strike), write plans
 
-## Council Protocol (Meta-Priority — first match wins)
-0. The Elon Gate       → Delete First? Can this be solved by removing? Redirect to /prune.
-1. Finish Before Start → STATE.md has IN PROGRESS task? REFUSE new TASK/FEAT.
-   Say: "⛔ G1 Block: Complete [TASK-XX] before starting new work."
-   Exceptions: (a) P0 bugs bypass. (b) /deploy and /sec ALWAYS bypass (production emergencies).
-2. Ambiguity Guard     → Vague intent? HALT. Ask one clarifying question.
-3. Safety Interrupt    → Unknown impact? HALT.
-4. Security Override   → Sensitive areas touched? Escalate to /sec.
-5. Architect Trigger   → DB / public API / global state touched? Escalate to /core.
-6. Efficiency Downgrade → Overkill detected? Prefer boring, minimal change.
-7. Execute             → Run the mode.
+## Planning Loop (CEO CODEX ↔ CLAUDE CODE)
+
+```
+CEO writes REQ → Claude writes PLAN → CEO reviews
+  Round 1: GO or REVISE
+  Round 2: GO or REVISE
+  Round 3: GO or CANCEL (MUST decide, no round 4)
+```
+
+CEO says WHAT and WHY. Claude decides HOW. No implementation hints in REQ.
+
+## Execution Loop (CLAUDE CODE ↔ CODEX REVIEW)
+
+```
+Claude executes + commits → Codex Review reviews diff
+  Fix attempt 1 (if NEEDS-REVISION)
+  Fix attempt 2 (if still NEEDS-REVISION)
+  Surgical fix or HARD-NO (if still failing after 2 attempts)
+```
+
+Surgical fix: 1 file, ≤20 lines, specific issue only. Not refactoring.
+
+## Anti-Loop Guarantees
+
+| Counter | Max | On Max Hit |
+|---------|-----|------------|
+| Plan versions | 3 | GO or CANCEL |
+| Execution fixes | 2 | Surgical fix or HARD-NO |
+| Surgical fixes per task | 1 | HARD-NO if fix fails |
+| Total lifecycle rounds | 7 | REQ + 3 plan versions + execute + 2 fix attempts |
+
+## Verdicts
+
+- **GO**: no critical findings, acceptance criteria met → merge
+- **NEEDS-REVISION**: medium findings, criteria partially unmet → file:line feedback
+- **HARD-NO**: critical flaw → BLOCKED, escalate to human
+- **CANCEL**: task removed by CEO → may split and re-issue
+- **GOOD-ENOUGH**: surgical fix applied → ship, log in hindsight
+
+## Memory Layers
+
+| Layer | File | Reads | Writes |
+|-------|------|-------|--------|
+| Constitution | CLAUDE.md | all roles | human only |
+| Dynamic State | .avner/primer.md | all roles | CEO CODEX |
+| Git Context | (injected by hook) | Claude, Codex Review | auto |
+| Patterns | .avner/hindsight.md | Claude, Codex Review | CEO CODEX |
+| Knowledge Base | .avner/obsidian/*.md | CEO, Claude | human + CEO |
+
+## The Council (optional quality gates)
+
+- Elazar (Vision): verify-vision.md — /new and /core
+- Eliezer (Spec): verify-spec.md — DB/API/global state changes
+- Yehoshua (Integration): verify-integration.md — cross-system
+- Yossi (SRE): verify-ops.md — /deploy + infra
+- Shimon (CISO): verify-security.md — auth/secrets/sensitive
+
+Council is optional. HIGH risk → recommended. Not mandatory unless human says so.
+
+## CEO Post-Task Verdict (Step 6b)
+
+After every review (Step 6), CEO CODEX emits a structured verdict (Mode C):
+- **GO-SHIP / REVISE / BLOCK** + constraint check, scope audit, next action, red flags
+- Human must approve before flow continues (proceed / revise / abort)
+- Fires on ALL risk tiers, including after HARD-NO
+- On revise: CEO does partial primer update, executor applies fixes, re-reviews
+- On abort: CEO updates primer with cancellation, skips to cleanup
 
 ## Risk Tiers
-- High:   auth, payments, secrets, DB schema, public API, global state, deploy configs
-- Medium: business logic, data transforms, UI state, service integrations
-- Low:    docs, tests-only, comments, formatting, config labels
 
-High-risk paths → Council is mandatory. Medium → Council is recommended. Low → skip Council.
+- **HIGH**: auth, payments, secrets, DB schema, public API, global state, deploy configs
+- **MEDIUM**: business logic, data transforms, UI state, service integrations
+- **LOW**: docs, tests-only, comments, formatting, config labels
 
-## Lifecycle (every /new and /core must produce)
-Decisions → Plan → Execute → Verify
-Four mandatory output sections.
+## Modes
 
-## Verification Artifact
-```
-Commands run:    [exact commands executed]
-Expected result: [what passing looks like]
-Observed result: [what actually happened]
-Remaining risk:  [known open gaps + why accepted]
-```
+/one-flow  → End-to-end: REQ → PLAN → review → execute → review → ship
+/prune     → Remove dead code/features (DELETE FIRST)
+/new       → New feature
+/fix       → Bugfix
+/pol       → Polish only (zero logic changes)
+/sec       → Security review/hardening
+/deploy    → Ship to production
+/core      → Deep schema/API/architecture work
+/research  → Pre-build investigation
+/review    → Reflect, sweep, health check
+/save      → Save WIP and push
+/ui        → Create/update UI_SPEC.md
+/ui-review → 6-pillar UI audit
 
-/fix and /deploy: MUST always end with this block.
-/new, /sec, /core, /review: SHOULD include when non-trivial.
+## Elon Principles
 
-## Handoff Protocol
-When ending a session or handing off to a new Claude instance, produce:
-1. What changed:        [files modified, features added/fixed, commits made]
-2. What did NOT change: [explicitly list what was out of scope or deferred]
-3. Validation results:  [commands run + outcomes]
-4. Remaining risks:     [known bugs, untested paths, open questions]
-5. Next recommended action: [exact first step for the next session]
-
-Update STATE.md as part of handoff (with user approval).
+1. **Delete First**: Can this be solved by removing something? → /prune
+2. **Finish Before Start**: primer.md has active task? Complete it first.
+3. **Flow Over Perfection**: GOOD-ENOUGH beats endless revision. Ship it.
+4. **Hard Caps**: every loop has a max. Hit max → decide and move on.
+5. **Honest Reporting**: FAILED is valid. Partial is valid. Don't hide problems.
 
 ## Commit Format
-Every commit Claude creates MUST include this trailer (last line of commit message):
+
 ```
+<type>(scope): description
+
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
-Commit patterns by mode:
-- /new:    `feat(scope): description`
-- /fix:    `fix(scope): description`
-- /core:   `refactor(scope): description`
-- /sec:    `sec(scope): mitigation description`
-- /deploy: `chore(deploy): v[version] — what shipped`
-- /pol:    `style(scope): what was polished`
-- /save:   `wip(TASK-XX): progress summary`
+Types: feat, fix, refactor, sec, style, chore, wip
+Surgical fix: `fix(review): [issue] — CODEX-REVIEW`
 
-## Commit Evidence Lock
-Before committing, evidence must exist in `.avner/4_operations/last_vision_check.txt`:
-- /new and /core: `APPROVE <timestamp>` (written by verify-vision)
-- /fix: `FIX-BYPASS <timestamp>` (written before commit)
-The PreToolUse hook blocks `git commit` if this file is missing or invalid.
+## Verification Artifact (mandatory for /fix, /deploy)
 
-## Models
-- Opus 4.6     → /sec, vision decisions (full adversarial thinking)
-- opusplan     → /core, /review (Opus for Decisions/Plan, Sonnet for Execute)
-- Sonnet 4.6   → /new, /fix, /deploy, /research, /prune, integration
-- Haiku 4.5    → /pol, quick reads, searches, formatting
+```
+Commands run:    [exact commands]
+Expected result: [what passing looks like]
+Observed result: [what actually happened]
+Remaining risk:  [known gaps + why accepted]
+```
 
 ## DNA Safety Rule (חוק יסוד)
-Claude NEVER modifies these files without explicit user approval + visible diffs:
-- CLAUDE.md (constitution)
-- .avner/MEMORY.md (permanent memory)
-- .avner/4_operations/STATE.md (session state)
-- .avner/*/LESSONS_*.md (lessons learned)
 
-Auto Memory is disabled. All "learned rules" must be proposed in-chat, not auto-appended.
-Hooks may READ these files. Hooks may REMIND user to update. Hooks NEVER WRITE to them.
+Claude NEVER modifies CLAUDE.md without explicit human approval + visible diffs.
+Hooks may READ governance files. Hooks may REMIND. Hooks NEVER WRITE.
 
 NOTE: Hooks rely on Bash. On Windows, run Claude Code via Git Bash or WSL.
 
-> One rule to keep CLAUDE.md honest:
 > "Would removing this line cause mistakes? If not — cut it."

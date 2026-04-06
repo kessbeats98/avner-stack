@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# avner-init — AVNER v9 project onboarding CLI
+# avner-init — AVNER v10 project onboarding CLI
 # Usage:
 #   avner-init --new <project-name> [--stack "..."] [--goal "..."]
 #   avner-init --project <path>     [--stack "..."] [--goal "..."]
@@ -15,7 +15,7 @@ AGENTS_DIR="$AVNER_STACK_DIR/agents"
 
 usage() {
   cat <<'EOF'
-avner-init — AVNER v9 project onboarding
+avner-init — AVNER v10 project onboarding
 
 Usage:
   avner-init --new <project-name> [--stack "..."] [--goal "..."]
@@ -52,7 +52,7 @@ substitute() {
 }
 
 copy_template() {
-  local rel_path="$1"      # relative path under templates/project/, e.g. ".avner/MEMORY.md.tmpl"
+  local rel_path="$1"      # relative path under templates/project/, e.g. ".avner/primer.md.tmpl"
   local src="$TEMPLATE_DIR/$rel_path"
 
   # Determine output filename: strip .tmpl and apply name mappings
@@ -103,8 +103,8 @@ copy_agents() {
     fi
   done
 
-  # Copy v9 agents (manager, executor, reviewer)
-  for agent_name in avner-manager claude-executor codex-reviewer; do
+  # Copy v10 agents (ceo-codex, claude-code, codex-review)
+  for agent_name in ceo-codex claude-code codex-review; do
     local src="$AGENTS_DIR/${agent_name}.md"
     local dest="$agents_dest/${agent_name}.md"
 
@@ -122,6 +122,47 @@ copy_agents() {
       CREATED+=(".claude/agents/${agent_name}.md")
     fi
   done
+}
+
+copy_lib_files() {
+  for entry in "${COPY_FILES[@]}"; do
+    local src_rel="${entry%%:*}"
+    local dest_rel="${entry##*:}"
+    local src="$AVNER_STACK_DIR/$src_rel"
+    local dest="$TARGET_DIR/$dest_rel"
+
+    if [ ! -f "$src" ]; then
+      echo "  WARN: lib file not found: $src_rel"
+      continue
+    fi
+
+    if [ "$MODE" = "project" ] && [ -f "$dest" ]; then
+      echo "  SKIP: $dest_rel (already exists)"
+      SKIPPED+=("$dest_rel")
+      continue
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+    echo "  OK: $dest_rel"
+    CREATED+=("$dest_rel")
+  done
+}
+
+create_obsidian_dir() {
+  local obsidian_dir="$TARGET_DIR/.avner/obsidian"
+  if [ -d "$obsidian_dir" ]; then
+    echo "  SKIP: .avner/obsidian/ (already exists)"
+    return
+  fi
+  mkdir -p "$obsidian_dir"
+  cat > "$obsidian_dir/.gitkeep" <<'EOF'
+# Knowledge base — product notes, domain knowledge, business rules.
+# Human-maintained. CEO CODEX can add discovery notes.
+# Search with: Glob .avner/obsidian/**/*.md
+EOF
+  echo "  OK: .avner/obsidian/"
+  CREATED+=(".avner/obsidian/")
 }
 
 create_project_gitignore() {
@@ -160,7 +201,7 @@ target/
 !.env.example
 
 # AVNER runtime artifacts
-.avner/4_operations/STATE.md.bak
+.avner/primer.md.bak
 .avner/4_operations/last_vision_check.txt
 .avner/4_operations/gate_pass.txt
 GITIGNORE
@@ -190,12 +231,9 @@ detect_stack() {
 TEMPLATES=(
   "CLAUDE.md.tmpl"
   ".claude/settings.json.tmpl"
-  ".avner/MEMORY.md.tmpl"
-  ".avner/LESSONS_VISION.md.tmpl"
-  ".avner/LESSONS_ARCHITECTURE.md.tmpl"
-  ".avner/LESSONS_CONTRACTS.md.tmpl"
-  ".avner/LESSONS_OPERATIONS.md.tmpl"
-  ".avner/LESSONS_AUTO.md.tmpl"
+  ".avner/primer.md.tmpl"
+  ".avner/hindsight.md.tmpl"
+  ".avner/backlog.md.tmpl"
   ".avner/1_vision/VISION.md.tmpl"
   ".avner/1_vision/REQUIREMENTS.md.tmpl"
   ".avner/1_vision/GAPANALYSIS.md.tmpl"
@@ -204,14 +242,19 @@ TEMPLATES=(
   ".avner/3_contracts/APICONTRACTS.md.tmpl"
   ".avner/3_contracts/DBSCHEMA.md.tmpl"
   ".avner/3_contracts/UI_SPEC.md.tmpl"
-  ".avner/4_operations/STATE.md.tmpl"
   ".avner/4_operations/RUNBOOK.md.tmpl"
   ".avner/4_operations/UI_REVIEW.md.tmpl"
   ".avner/4_operations/DISPATCH.md.tmpl"
   ".avner/4_operations/EVIDENCE.md.tmpl"
   ".avner/4_operations/REVIEW.md.tmpl"
   ".avner/4_operations/COUNCIL_LOG.md.tmpl"
+  ".avner/4_operations/APPROVAL_PENDING.md.tmpl"
   ".paperclip/config.yaml.tmpl"
+)
+
+# Files to copy verbatim (no template substitution)
+COPY_FILES=(
+  "lib/paperclip.sh:.paperclip/lib/paperclip.sh"
 )
 
 # --- Parse args ---
@@ -289,6 +332,12 @@ if [ "$MODE" = "new" ]; then
   # Copy agents
   copy_agents
 
+  # Copy lib files (paperclip client)
+  copy_lib_files
+
+  # Create obsidian knowledge base directory
+  create_obsidian_dir
+
   # Create .gitignore
   create_project_gitignore
 
@@ -299,8 +348,8 @@ if [ "$MODE" = "new" ]; then
   echo "Next steps:"
   echo "  cd $PROJECT_NAME"
   echo "  Open this folder in Claude Code."
-  echo "  Fill in .avner/1_vision/VISION.md and .avner/MEMORY.md"
-  echo "  Start your first feature with /one-flow (solo) or /dispatch (multi-agent)"
+  echo "  Fill in .avner/1_vision/VISION.md and .avner/primer.md"
+  echo "  Start your first feature with /one-flow"
   echo ""
 
 elif [ "$MODE" = "project" ]; then
@@ -337,6 +386,12 @@ elif [ "$MODE" = "project" ]; then
   # Copy agents (additive only)
   copy_agents
 
+  # Copy lib files (paperclip client)
+  copy_lib_files
+
+  # Create obsidian knowledge base directory
+  create_obsidian_dir
+
   echo ""
   echo "=== Onboarding complete ==="
   echo "  Files created: ${#CREATED[@]}"
@@ -352,9 +407,9 @@ elif [ "$MODE" = "project" ]; then
 
   echo ""
   echo "Next steps:"
-  echo "  Fill in .avner/1_vision/VISION.md and .avner/MEMORY.md"
+  echo "  Fill in .avner/1_vision/VISION.md and .avner/primer.md"
   echo "  Review .avner/2_architecture/TECHSTACK.md — add your build/test/lint commands"
-  echo "  Start your first feature with /one-flow (solo) or /dispatch (multi-agent)"
+  echo "  Start your first feature with /one-flow"
   echo ""
 
   if [ "$STACK" != "Node.js / TypeScript" ] && [ "$STACK" != "TBD" ]; then

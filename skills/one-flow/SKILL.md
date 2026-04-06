@@ -1,244 +1,269 @@
 ---
 name: one-flow
-description: End-to-end feature delivery — plan, review, build, QA, ship.
+description: End-to-end feature delivery — REQ → PLAN → review → execute → review → ship.
 invocation: manual
 model: sonnet
 ---
 
-# /one-flow — Full Feature Delivery
+# /one-flow — Master Lifecycle
 
-Orchestrates AVNER governance + structured plan review + UI contracts + QA + shipping
-into a single end-to-end workflow. Each step is self-contained — read only the current step.
-
----
-
-## Step 0: Gate Check
-
-Before anything:
-1. Read `.avner/4_operations/STATE.md` — check for IN PROGRESS tasks.
-2. If IN PROGRESS exists → enforce G1: "⛔ Complete [TASK-XX] first." (Exception: P0 bugs)
-3. Read `.avner/MEMORY.md` — load identity, non-goals, key decisions.
-4. Read `.avner/1_vision/REQUIREMENTS.md` — have R-ids available.
+Orchestrates the 3-role protocol: CEO CODEX → CLAUDE CODE → CODEX REVIEW.
+Each step has hard caps. Flow over perfection.
 
 ---
 
-## Step 1: Input & Framing
+## Step 0: Load Context
 
-### 1a. Feature Description
+1. Read `.avner/primer.md` — identity, last tasks, next steps, blockers, CEO Decisions Log
+2. Read `.avner/hindsight.md` — patterns to follow/avoid
+3. Read `.avner/1_vision/REQUIREMENTS.md` — R-ids
+4. Check primer.md for active task → if active, finish it first (exception: P0 bugs)
+5. Git context: `git log --oneline -5 && git diff --stat && git status --short`
+
+---
+
+## Step 1: Requirements (CEO CODEX role)
+
+> **First**: load /ceo-codex skill. Apply all 5 principles when writing REQ.
+
+### 1a. Feature Input
 Ask the user:
-- What feature are you building? (one sentence)
-- Which R-ids does it satisfy? (from REQUIREMENTS.md)
+- What are you building? (one sentence)
+- Which R-ids? (from REQUIREMENTS.md)
 
-If the user is unsure, run a **mini-brief** (adapted from GStack office-hours):
-
-**Six forcing questions:**
-1. **Demand Reality**: What's the strongest evidence someone wants this?
-2. **Status Quo**: What are users doing right now to solve this?
-3. **Desperate Specificity**: Name the actual human who needs this most.
-4. **Narrowest Wedge**: What's the smallest version someone would use — this week?
-5. **Observation**: Have you watched someone try to do this without help?
-6. **Future-Fit**: In 3 years, does this become more essential or less?
-
-Push once on each answer. First answers are polished; real answers come after follow-up.
+If unsure, run mini-brief:
+1. **Demand Reality**: strongest evidence someone wants this?
+2. **Narrowest Wedge**: smallest version someone would use this week?
+3. **Future-Fit**: in 3 years, more essential or less?
 
 ### 1b. Scope Check
-- Does this map to at least one R-id? If not → HALT (scope creep).
-- Does it conflict with non-goals in MEMORY.md? If yes → HALT.
-- Could this be solved by removing something? If yes → suggest /prune first.
+- Maps to at least one R-id? If not → HALT (scope creep)
+- Conflicts with non-goals in primer.md? → HALT
+- Solvable by removing something? → suggest /prune first
+
+### 1c. Write REQ Artifact
+
+```
+## REQ-[ID]
+What:       [one sentence]
+Why:        [R-ids + business justification]
+Scope:      [in-scope, explicit]
+Not-scope:  [out-of-scope, explicit]
+Risk:       [HIGH/MEDIUM/LOW + why]
+Accept:     [numbered criteria, max 5]
+Constraint: [budget, file limits, time]
+```
+
+No implementation hints. Pure product.
 
 ---
 
-## Step 2: Plan (AVNER Decisions + Plan)
+## Step 2: Plan (CLAUDE CODE role)
 
-### 2a. Decisions Section
-Document before touching code:
-- **What**: one-sentence description of the change.
-- **Why**: which R-ids this satisfies and why they can't be deferred.
-- **How**: high-level approach (not implementation details).
-- **Risk**: what could go wrong, what's the rollback.
-- **Not doing**: explicitly list what's out of scope for this feature.
+### 2a. Pre-Planning
+- Read hindsight.md for relevant patterns
+- Search obsidian/ for domain context: `Glob .avner/obsidian/**/*.md`
+- Read ARCHITECTURE.md, TECHSTACK.md
 
-### 2b. Plan Section
-Break into **max 7 atomic tasks**, each with:
-- Task number and title
-- Files likely touched
-- Verify command (how to confirm this task worked)
-- Estimated risk tier (High / Medium / Low)
+### 2b. Write PLAN Artifact
 
-Format:
 ```
-Task 1: [Title]
-  Files: [paths]
-  Verify: [command]
-  Risk: Low
-
-Task 2: [Title]
-  ...
+## PLAN for REQ-[ID]
+### Approach
+[1-3 sentences]
+### Tasks (max 7)
+1. [Title] — Files: [paths] — Verify: [cmd] — Risk: [L/M/H]
+### Risks & Mitigations
+### Not Doing
 ```
 
-One change = one commit. Each task is independently verifiable.
+No code. No pseudocode. Structure and intent only.
 
 ---
 
-## Step 3: Plan Review
+## Step 3: Plan Review (CEO CODEX role)
 
-Run three review passes. For each, take a position and present recommendations.
-Only ask the user when there's a genuine judgment call.
+> **First**: load /ceo-codex skill. Run the Review Checklist against the PLAN.
 
-### 3a. CEO Review (scope & ambition)
+### Planning Loop (max 3 rounds)
 
-Pick a mode based on context:
-- **Greenfield** → SCOPE EXPANSION (what's 10x more ambitious for 2x effort?)
-- **Enhancement** → SELECTIVE EXPANSION (hold scope + cherry-pick expansions)
-- **Bug fix / hotfix** → HOLD SCOPE (maximum rigor, minimum change)
-- **Overbuilt** → SCOPE REDUCTION (strip to essentials)
+**Round 1**: Review PLAN v1 against REQ
+- Does PLAN address every Scope item?
+- Does PLAN respect every Not-scope item?
+- Are REQ risks acknowledged and mitigated?
+- Are acceptance criteria testable?
+→ GO or REVISE (what's wrong, not how to fix)
 
-Check:
-- Premise challenge: Is this the right problem? What if we did nothing?
-- Existing code leverage: What already exists that we can reuse?
-- Temporal check: What must be decided NOW vs. can wait?
+**Round 2** (if REVISE): Review PLAN v2
+→ GO or REVISE (one more chance)
 
-### 3b. Design Review (UX/UI — skip if no UI)
+**Round 3** (if REVISE): MUST choose
+→ GO (good enough) or CANCEL. No round 4. Ever.
 
-Rate these 7 dimensions 0-10. For each below 8, explain what would make it a 10:
+### GO Signal
 
-1. **Information Architecture** — What does the user see first/second/third?
-2. **Interaction State Coverage** — Loading, empty, error, success, partial defined?
-3. **Edge Cases** — Long names, zero results, network fails, colorblind, RTL?
-4. **User Journey** — Emotional arc? Where does it break?
-5. **AI Slop Risk** — Generic card grids? Hero sections? Looks like every AI site?
-6. **Empty States** — "No items found" or actual design with warmth + CTA?
-7. **Responsive & Accessibility** — Per viewport? Keyboard nav, contrast, touch targets?
+```
+Verdict: GO
+REQ: REQ-[ID]
+Plan-version: [1|2|3]
+Conditions: [any, or "none"]
+```
 
-Fix the plan to address any dimension below 7.
+CLAUDE CODE cannot touch code without this signal.
 
-### 3c. Eng Review (architecture & tests)
+### 3d. Paperclip Approval Gate (HIGH risk only)
 
-Check:
-- **Complexity smell**: >8 files or 2+ new classes = challenge it.
-- **Existing code**: for each pattern, does the framework have a built-in?
-- **Architecture**: system design, dependency graph, data flow, failure scenarios.
-- **Test coverage**: trace every codepath → check against tests → flag gaps.
-
-For each gap, note the quality level needed:
-- ★★★ = Tests behavior with edge cases AND error paths
-- ★★ = Tests correct behavior, happy path only
-- ★ = Smoke test / existence check
-
-Present findings as: **AUTO-FIX** (mechanical, do it) or **ASK** (needs user judgment).
+If REQ risk is HIGH and verdict is GO:
+1. CEO CODEX calls `paperclip_request_approval` with task ID, risk, summary, council status
+2. Task is **gated** — Claude Code waits for approval confirmation
+3. CEO polls `paperclip_check_approval` until approved or rejected
+4. **Fallback**: if Paperclip unreachable, write to `.avner/4_operations/APPROVAL_PENDING.md` — human resolves manually
 
 ---
 
 ## Step 4: UI Contract (conditional)
 
-**Skip this step if no UI files are in the plan.**
+**Skip if no UI files in the plan.**
 
-Detect: do any planned tasks touch UI? (Check file paths for components, pages, layouts, styles.)
-
-If yes:
-1. Read `.avner/3_contracts/UI_SPEC.md` — check if in-scope screens are defined.
-2. If screens are missing from spec → run the `/ui` workflow:
-   - Add sections for affected screens to UI_SPEC.md.
-   - Define all 5 states, copy, layout, components per screen.
-   - Validate against 6 pillars.
-3. If screens exist in spec → confirm spec is current.
-4. Get user approval before proceeding to implementation.
+1. Read `.avner/3_contracts/UI_SPEC.md`
+2. If screens missing → run /ui workflow
+3. If screens exist → confirm spec is current
+4. Get user approval before proceeding
 
 ---
 
-## Step 5: Execute
+## Step 5: Execute (CLAUDE CODE role)
 
-### 5a. Vision Evidence
-Before first commit, establish evidence:
-- If this is /new or /core: invoke verify-vision agent.
-  - If APPROVE: `echo "APPROVE $(date +%s)" > .avner/4_operations/last_vision_check.txt`
-  - If HALT: stop and resolve.
-  - If SOLVE-BY-REMOVAL: redirect to /prune.
-- If this is /fix: `echo "FIX-BYPASS $(date +%s)" > .avner/4_operations/last_vision_check.txt`
+### 5.pre-a. Paperclip Budget Check (soft flag)
+CEO CODEX calls `paperclip_check_budget`. If remaining budget < per_task_cap for this risk level, flag in DISPATCH.md Constraint field. Does not block — proceed with warning.
+Skipped silently if Paperclip unreachable or dry_run.
 
-### 5b. Implement Each Task
-For each task from the Plan (Step 2b):
+### 5.pre-b. Constraint Alignment Check
+Read `current_constraint` from primer.md. If the current task does NOT clearly address it:
+→ Flag to CEO CODEX before investing significant effort.
+→ CEO responds in 1 turn: "confirmed" or "redirect". No response after 1 turn → proceed (assume confirmed).
+This is a soft flag, not a hard halt.
 
-1. **Implement** the change.
-2. **Run verify command** from the plan.
-3. **Run lint/typecheck** if available.
-4. **Stage and commit** using AVNER commit format:
+### 5a. Vision Evidence (for /new, /core)
+- Invoke verify-vision via Agent() if HIGH risk or user requests
+- For /fix: write `FIX-BYPASS <timestamp>` to last_vision_check.txt
+
+### 5b. Create Branch
+```bash
+git checkout -b [branch-from-plan]
+```
+
+### 5c. Implement Each Task
+For each task from the PLAN:
+1. Read existing code first
+2. Implement the change
+3. Run verify command
+4. Run lint/typecheck
+5. Commit (one change = one commit):
    ```
-   feat(scope): description
+   <type>(scope): description
 
    Co-Authored-By: Claude <noreply@anthropic.com>
    ```
-5. If verify fails → debug (max 3 attempts with evidence):
-   - Attempt 1: collect error, form hypothesis, fix.
-   - Attempt 2: different approach, collect evidence.
-   - Attempt 3: escalate to user with all evidence collected.
+6. On failure → 3-attempt debug loop, then document and move on
 
-### 5c. Spec Check (after implementation)
-If changes touched DB schema, API signatures, or global state:
-- Invoke verify-spec agent.
-- If ESCALATE-TO-CORE → pause and inform user.
-- If FAIL → fix the spec violation before continuing.
+### 5d. Write EVIDENCE.md
+After all tasks: `.avner/4_operations/EVIDENCE.md`
+- Status: COMPLETE / PARTIAL / FAILED
+- Subtasks, commands, observed results, files changed, acceptance criteria, remaining risk
 
 ---
 
-## Step 6: UI Review (conditional)
+## Step 6: Review (CODEX REVIEW role)
 
-**Skip if Step 4 was skipped (no UI work).**
+### Execution Loop (max 2 fix rounds)
 
-After implementation, audit the UI:
+**Review 1**: Run diff review per codex-review protocol
+- Critical pass: injection, auth bypass, race conditions, secrets, data loss
+- Spec pass (MEDIUM+): acceptance criteria, side effects
+- Quality pass (HIGH): tests, error handling, perf, a11y
 
-1. Score 6 pillars (1–4 each):
-   - Copywriting, Visuals, Color, Typography, Spacing, Experience Design
-2. For each pillar below 3, identify specific fixes.
-3. Present **Top 3 Priority Fixes** to the user.
-4. If user approves fixes → implement as additional atomic commits.
-5. Append review entry to `.avner/4_operations/UI_REVIEW.md` (with user approval).
+Write REVIEW.md → GO / NEEDS-REVISION / HARD-NO
+
+**Fix 1** (if NEEDS-REVISION): CLAUDE CODE fixes file:line findings, resubmits
+**Review 2**: Re-review → GO / NEEDS-REVISION / HARD-NO
+
+**Fix 2** (if NEEDS-REVISION): CLAUDE CODE tries again, resubmits
+**Review 3**: Final review
+- If still issues → Surgical Fix Protocol (1 file, ≤20 lines) OR HARD-NO
+
+### Surgical Fix
+- Commit: `fix(review): [issue] — CODEX-REVIEW`
+- REVIEW.md: `Status: GOOD-ENOUGH. Surgical fix applied. Moving on.`
+- If fix exceeds constraints → HARD-NO → escalate
 
 ---
 
-## Step 7: Review & Ship
+## Step 6b: CEO Post-Task Verdict (mandatory gate)
 
-### 7a. Verification Artifact
-Produce the mandatory block:
+Fires after Step 6 Review, on ALL risk tiers. Fires even on HARD-NO.
+
+1. **Invoke** CEO CODEX subagent in Mode C
+   - Pass: TASK id, REQ, `.avner/4_operations/EVIDENCE.md`, `.avner/4_operations/REVIEW.md`, `.avner/primer.md`
+2. **Render** verdict to user in framed block (see `agents/ceo-codex.md` § Mode C format)
+3. **STOP** — wait for human response:
+   - **proceed** → flow continues to Step 7 (Council) or Step 8 (Merge)
+   - **revise** → CEO does partial primer update (current_constraint + blockers only), loop back to Step 5c for targeted fixes
+   - **abort** → CEO updates primer with cancellation context, skip to Step 8b cleanup
+4. On revise: CLAUDE CODE applies fixes, re-runs Step 6 review, then Step 6b fires again
+
+---
+
+## Step 7: Council Gate (optional, HIGH risk)
+
+If HIGH risk or user requests:
+1. Invoke required Council agents via Agent()
+2. Parse verdicts per `docs/verdict-protocol.md`
+3. Write COUNCIL_LOG.md entries
+4. Any BLOCK → stop, present to human
+5. All PASS → proceed to merge
+
+---
+
+## Step 8: Merge & Close
+
+### 8a. Merge
+- LOW/MEDIUM + review GO → merge
+- HIGH + review GO + Council PASS → present to human for approval → merge
+
+### 8b. Post-Task (CEO CODEX role)
+1. Update primer.md: last 3 tasks, next 3 steps, blockers
+2. Update `current_constraint` in primer.md — has the bottleneck shifted?
+3. Update hindsight.md: synthesize EVIDENCE + REVIEW into pattern entries
+4. **Paperclip cost event**: call `paperclip_cost_event` with model + token usage (if available). Silently skipped if unavailable or dry_run.
+5. Clear artifacts: DISPATCH.md → `## No active assignment`, delete gate_pass.txt, last_vision_check.txt
+
+> **Ownership**: CEO CODEX is the sole writer of primer.md, hindsight.md, and backlog.md.
+> **Write guard**: Claude Executor MUST NOT write to `.avner/primer.md`, `.avner/backlog.md`, `.avner/hindsight.md`, `agents/ceo-codex.md`, or `skills/ceo-codex/SKILL.md`. These are CEO CODEX-owned files.
+
+### 8c. Handoff
 ```
-Commands run:    [exact commands executed during this flow]
-Expected result: [what passing looks like for each task]
-Observed result: [what actually happened]
-Remaining risk:  [known gaps + why accepted]
+1. What changed: [files, features, commits]
+2. What did NOT change: [deferred items]
+3. Validation results: [commands + outcomes]
+4. Remaining risks: [known gaps]
+5. Next action: [exact first step for next session]
 ```
 
-### 7b. Pre-Ship Review
-Review the full diff (all commits from this flow):
+---
 
-**Critical pass:**
-- SQL & data safety
-- Race conditions & concurrency
-- Auth/trust boundary violations
-- Enum & value completeness
+## Anti-Loop Summary
 
-**Informational pass:**
-- Conditional side effects
-- Magic numbers & string coupling
-- Dead code & consistency
-- Test gaps
+| Phase | Max Rounds | Escape |
+|-------|-----------|--------|
+| Planning (CEO ↔ Claude) | 3 plan versions | GO or CANCEL |
+| Execution fixes (Claude ↔ Review) | 2 fix attempts | Surgical fix or HARD-NO |
+| Surgical fix | 1 per task | HARD-NO if fix fails |
+| CEO Post-Task Verdict (6b) | 1 per review cycle | Human decides: proceed/revise/abort |
+| Debug per subtask | 3 attempts | Document failure, move on |
 
-### 7c. Deploy Gates (if shipping)
-If the user wants to deploy:
-1. Invoke verify-ops (Yossi) → GO / NO-GO / CONDITIONAL-GO
-2. Invoke verify-security (Shimon) → GO / NO-GO / NEEDS-MITIGATION
-3. Both must pass. Shimon has veto.
-4. If CONDITIONAL-GO → get explicit human sign-off.
+## Escalation
 
-### 7d. Update Project State
-With user approval (DNA Safety Rule):
-- Update `STATE.md`: mark tasks as ✅ DONE, update session continuity.
-- Update relevant `LESSONS_*.md` if insights were gained.
-- Update `RUNBOOK.md` if deploy procedures changed.
-
-### 7e. Handoff
-Produce the handoff block:
-1. What changed: files, features, commits.
-2. What did NOT change: deferred items.
-3. Validation results: commands + outcomes.
-4. Remaining risks: bugs, untested paths.
-5. Next recommended action: exact first step for next session.
+- HARD-NO → task BLOCKED → human decides (retry, split, abandon)
+- CANCEL → task removed → CEO may split and re-issue
+- GOOD-ENOUGH → ship, log imperfections in hindsight
